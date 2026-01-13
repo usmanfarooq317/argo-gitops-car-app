@@ -4,36 +4,55 @@ pipeline {
     environment {
         DOCKERHUB = credentials('docker-hub-creds')
         IMAGE = "usmanfarooq317/argocd-gitops-car-app"
+        TAG_FILE = ".image_tag"  // Stores last used numeric tag
     }
 
     stages {
-        stage("Build") {
+
+        stage("Prepare Tag") {
             steps {
                 script {
-                    // Try to pull existing image (checks if it exists)
-                    def exists = sh(script: "docker pull $IMAGE:latest || echo 'notfound'", returnStdout: true).trim()
-
-                    if (!exists.contains("notfound")) {
-                        echo "Image exists on DockerHub, removing local copy to replace..."
-                        sh "docker rmi $IMAGE:latest || true"
+                    // Read the last tag from file, increment for new image
+                    if (fileExists(TAG_FILE)) {
+                        def lastTag = readFile(TAG_FILE).trim()
+                        env.TAG = (lastTag.toInteger() + 1).toString()
                     } else {
-                        echo "Image does not exist on DockerHub, will push new build"
+                        env.TAG = "1"
                     }
 
-                    // Build new image
-                    sh "docker build -t $IMAGE:latest ."
+                    // Save the new tag back to the file
+                    writeFile file: TAG_FILE, text: env.TAG
+                    echo "Building Docker image with tag: ${env.TAG}"
                 }
             }
         }
 
-        stage("Push") {
+        stage("Build Image") {
             steps {
                 script {
-                    // Login to DockerHub
+                    // Build Docker image with new numeric tag
+                    sh "docker build -t $IMAGE:${env.TAG} ."
+                }
+            }
+        }
+
+        stage("Push Image") {
+            steps {
+                script {
+                    // Login to DockerHub and push the new image
                     sh """
                         echo $DOCKERHUB_PSW | docker login -u $DOCKERHUB_USR --password-stdin
-                        docker push $IMAGE:latest
+                        docker push $IMAGE:${env.TAG}
                     """
+                }
+            }
+        }
+
+        stage("Cleanup Local Image") {
+            steps {
+                script {
+                    // Optional: remove local copy to save space
+                    sh "docker rmi $IMAGE:${env.TAG} || true"
                 }
             }
         }
