@@ -12,7 +12,7 @@ pipeline {
         stage("Prepare Tag") {
             steps {
                 script {
-                    // Read last tag from file, or start with 1
+                    // Read last tag from file, or start at 1
                     if (fileExists(TAG_FILE)) {
                         def lastTag = readFile(TAG_FILE).trim()
                         env.TAG = (lastTag.toInteger() + 1).toString()
@@ -28,24 +28,24 @@ pipeline {
         stage("Ensure DockerHub Repository Exists") {
             steps {
                 script {
-                    // Check if repo exists using DockerHub API
-                    def repoCheck = sh(
-                        script: """curl -s -u $DOCKERHUB_USR:$DOCKERHUB_PSW https://hub.docker.com/v2/repositories/$DOCKERHUB_USR/$(basename $IMAGE)/""",
-                        returnStdout: true
-                    ).trim()
+                    sh '''
+                    # Extract repo name from full image name
+                    REPO_NAME="${IMAGE##*/}"
 
-                    if (repoCheck.contains('"detail": "Not Found"')) {
+                    # Check if repository exists on DockerHub
+                    REPO_CHECK=$(curl -s -u $DOCKERHUB_USR:$DOCKERHUB_PSW https://hub.docker.com/v2/repositories/$DOCKERHUB_USR/$REPO_NAME/)
+
+                    if echo "$REPO_CHECK" | grep -q '"detail": "Not Found"'; then
                         echo "Repository does not exist. Creating it..."
-                        sh """
-                            curl -s -u $DOCKERHUB_USR:$DOCKERHUB_PSW \
+                        curl -s -u $DOCKERHUB_USR:$DOCKERHUB_PSW \
                             -X POST https://hub.docker.com/v2/repositories/ \
                             -H "Content-Type: application/json" \
-                            -d '{"name":"$(basename $IMAGE)","is_private":false}'
-                        """
+                            -d "{\"name\":\"$REPO_NAME\",\"is_private\":false}"
                         echo "Repository created successfully!"
-                    } else {
+                    else
                         echo "Repository already exists, continuing..."
-                    }
+                    fi
+                    '''
                 }
             }
         }
@@ -53,7 +53,8 @@ pipeline {
         stage("Build Image") {
             steps {
                 script {
-                    sh "docker build -t $IMAGE:${env.TAG} ."
+                    echo "Building Docker image: ${IMAGE}:${TAG}"
+                    sh "docker build -t ${IMAGE}:${TAG} ."
                 }
             }
         }
@@ -61,10 +62,11 @@ pipeline {
         stage("Push Image") {
             steps {
                 script {
-                    sh """
-                        echo $DOCKERHUB_PSW | docker login -u $DOCKERHUB_USR --password-stdin
-                        docker push $IMAGE:${env.TAG}
-                    """
+                    echo "Pushing Docker image: ${IMAGE}:${TAG}"
+                    sh '''
+                    echo $DOCKERHUB_PSW | docker login -u $DOCKERHUB_USR --password-stdin
+                    docker push ${IMAGE}:${TAG}
+                    '''
                 }
             }
         }
@@ -72,7 +74,7 @@ pipeline {
         stage("Cleanup Local Image") {
             steps {
                 script {
-                    sh "docker rmi $IMAGE:${env.TAG} || true"
+                    sh "docker rmi ${IMAGE}:${TAG} || true"
                 }
             }
         }
