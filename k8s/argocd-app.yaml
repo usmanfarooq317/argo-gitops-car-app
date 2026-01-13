@@ -2,6 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: gitops-traffic
+  namespace: argo-gitops-car-app 
 spec:
   source:
     repoURL: https://github.com/usmanfarooq317/argo-gitops-car-app
