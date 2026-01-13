@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    DOCKERHUB = credentials('dockerhub-creds')
+    DOCKERHUB = credentials('docker-hub-creds')
     IMAGE = "usmanfarooq317/argocd-gitops-car-app"
   }
 
