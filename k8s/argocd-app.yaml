@@ -2,15 +2,16 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: gitops-traffic
-  namespace: argocd                 # 👈 MUST be argocd namespace
+  namespace: argocd       # ArgoCD namespace
 spec:
-  destination:
-    namespace: argo-gitops-car-app # 👈 your app namespace
-    server: https://kubernetes.default.svc
+  project: default        # 👈 REQUIRED
   source:
-    repoURL: https://github.com/usmanfarooq317/argo-gitops-car-app
+    repoURL: https://github.com/usmanfarooq317/argocd-gitops-car-app
     path: k8s
     targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo-gitops-car-app
   syncPolicy:
     automated:
       prune: true
