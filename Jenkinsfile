@@ -7,11 +7,6 @@ pipeline {
   }
 
   stages {
-    stage("Clone") {
-      steps {
-        git 'https://github.com/usmanfarooq317/argo-gitops-car-app'
-      }
-    }
 
     stage("Build") {
       steps {
