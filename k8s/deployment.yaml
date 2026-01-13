@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitops-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gitops
+  template:
+    metadata:
+      labels:
+        app: gitops
+    spec:
+      imagePullSecrets:
+      - name: dockerhub-secret
+      containers:
+      - name: app
+        image: usmanfarooq317/argocd-gitops-car-app:latest
+        ports:
+        - containerPort: 8002

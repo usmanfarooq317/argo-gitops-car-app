@@ -1,0 +1,32 @@
+body {
+    background:#0b132b;
+    color:white;
+    text-align:center;
+    font-family: Arial;
+  }
+  
+  .road {
+    margin:40px auto;
+    width:90%;
+    height:200px;
+    background:#333;
+    border-radius:20px;
+    position: relative;
+    overflow:hidden;
+  }
+  
+  .car {
+    width:80px;
+    height:40px;
+    background:red;
+    border-radius:10px;
+    position:absolute;
+    top:50%;
+    animation: move 5s linear infinite;
+  }
+  
+  @keyframes move {
+    from { left:-100px; }
+    to { left:100%; }
+  }
+  
