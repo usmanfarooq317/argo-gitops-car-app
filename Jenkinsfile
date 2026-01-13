@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB = credentials('docker-hub-creds')  // username & token
+        DOCKERHUB = credentials('docker-hub-creds')  // DockerHub username & token
         IMAGE = "usmanfarooq317/argocd-gitops-car-app"
         TAG_FILE = ".image_tag"
     }
@@ -12,6 +12,7 @@ pipeline {
         stage("Prepare Tag") {
             steps {
                 script {
+                    // Read last tag from file, or start with 1
                     if (fileExists(TAG_FILE)) {
                         def lastTag = readFile(TAG_FILE).trim()
                         env.TAG = (lastTag.toInteger() + 1).toString()
@@ -19,31 +20,31 @@ pipeline {
                         env.TAG = "1"
                     }
                     writeFile file: TAG_FILE, text: env.TAG
-                    echo "Using Docker image tag: ${env.TAG}"
+                    echo "Using image tag: ${env.TAG}"
                 }
             }
         }
 
-        stage("Ensure DockerHub Repo Exists") {
+        stage("Ensure DockerHub Repository Exists") {
             steps {
                 script {
-                    echo "Checking if repository exists on DockerHub..."
+                    // Check if repo exists using DockerHub API
                     def repoCheck = sh(
                         script: """curl -s -u $DOCKERHUB_USR:$DOCKERHUB_PSW https://hub.docker.com/v2/repositories/$DOCKERHUB_USR/$(basename $IMAGE)/""",
-                        returnStatus: true
-                    )
+                        returnStdout: true
+                    ).trim()
 
-                    if (repoCheck != 0) {
-                        echo "Repository does not exist, creating..."
+                    if (repoCheck.contains('"detail": "Not Found"')) {
+                        echo "Repository does not exist. Creating it..."
                         sh """
-                            curl -s -u $DOCKERHUB_USR:$DOCKERHUB_PSW -X POST \
+                            curl -s -u $DOCKERHUB_USR:$DOCKERHUB_PSW \
+                            -X POST https://hub.docker.com/v2/repositories/ \
                             -H "Content-Type: application/json" \
-                            -d '{ "name": "$(basename $IMAGE)", "is_private": false }' \
-                            https://hub.docker.com/v2/repositories/$DOCKERHUB_USR/
+                            -d '{"name":"$(basename $IMAGE)","is_private":false}'
                         """
-                        echo "Repository created successfully."
+                        echo "Repository created successfully!"
                     } else {
-                        echo "Repository already exists."
+                        echo "Repository already exists, continuing..."
                     }
                 }
             }
