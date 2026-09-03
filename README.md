@@ -146,7 +146,7 @@ kubectl apply -f k8s/ -n argo-gitops-car-app
 * The ArgoCD Application CRD **must be applied in the `argocd` namespace**:
 
 ```bash
-kubectl apply -f k8s/argocd-app.yaml -n argocd
+kubectl apply -f k8s/argocd-app.yaml -n argo-gitops-car-app
 ```
 
 ### e) Sync via CLI / UI

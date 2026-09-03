@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: gitops-traffic
-  namespace: argocd       # ArgoCD namespace
+  namespace: argo-gitops-car-app       # ArgoCD namespace
 spec:
   project: default        # 👈 REQUIRED
   source:
